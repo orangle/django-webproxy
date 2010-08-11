@@ -61,6 +61,10 @@ MIDDLEWARE_CLASSES = (
     #'django.middleware.common.CommonMiddleware',
     #'django.contrib.sessions.middleware.SessionMiddleware',
     #'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    # To try the code you should uncomment the following line, and set your webbrowser to use 127.0.0.1:8000
+    # as an http proxy :)
+    #'webproxy.proxy.middleware.ProxyMiddleware'
 )
 
 ROOT_URLCONF = 'webproxy.urls'
