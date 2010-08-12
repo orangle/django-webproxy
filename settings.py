@@ -9,7 +9,7 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = ''           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+DATABASE_ENGINE = 'sqlite3'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
 DATABASE_NAME = ''             # Or path to database file if using sqlite3.
 DATABASE_USER = ''             # Not used with sqlite3.
 DATABASE_PASSWORD = ''         # Not used with sqlite3.
@@ -64,7 +64,7 @@ MIDDLEWARE_CLASSES = (
     
     # To try the code you should uncomment the following line, and set your webbrowser to use 127.0.0.1:8000
     # as an http proxy :)
-    #'webproxy.proxy.middleware.ProxyMiddleware'
+    'webproxy.proxy.middleware.ProxyMiddleware',
 )
 
 ROOT_URLCONF = 'webproxy.urls'
@@ -80,8 +80,8 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     #'django.contrib.sessions',
     #'django.contrib.sites',
-    'proxy',
+    #'proxy',
 )
 
-WEB_PROXY_DOMAIN = 'www.google.com'
-WEB_PROXY_PORT = 80
+#WEB_PROXY_DOMAIN = 'www.google.com'
+#WEB_PROXY_PORT = 80

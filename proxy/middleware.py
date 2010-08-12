@@ -4,7 +4,8 @@ Created on Aug 10, 2010
 @author: tribaal
 '''
 from django.http import HttpResponse
-import socket
+from django.core.servers import basehttp
+import urllib2
 
 class ProxyMiddleware:
     
@@ -14,58 +15,43 @@ class ProxyMiddleware:
         If this returns an HttpResponse -> nothing else is made by django and the HttpResponse is sent to client
         If this returns None -> the request is passed along to the url resolver for "normal" handling by Django """
         
-        # So far, it's basically a copy/paste from the function in webproxy.proxy.views
-        
         if request.META['QUERY_STRING']:
             querystring = request.META['PATH_INFO'] + '?' + request.META['QUERY_STRING']
         else:
             querystring = request.META['PATH_INFO']
         server_protocol = request.META['SERVER_PROTOCOL']
     
+        outgoing_headers = {}
         data = []
         data.append(' '.join([request.method, querystring, server_protocol]))#
         for a, b in request.environ.iteritems():
             if a.startswith('HTTP_'):
                 a = header_name(a)
+                outgoing_headers[a] = b
                 data.append('%s %s' % (a, b))
         data = '\r\n'.join(data) + '\r\n\r\n'
-        #print data
     
-        # TODO: This part where the socket is created should be handled in a different way: The problem is that
-        # opening a socket will not make a DNS resolution, so it works only when the user types in the "perfect"
-        # address in his browser, like "www.google.com" works, but "google.com" doesn't.
-        # We should use urllib here, probably.
+        # Instead of using sockets I now use urllib2, so that DNS "beautifying" is properly done.
         
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((request.META['HTTP_HOST'],80))
-    
-        sock.sendall(data)
-        output = []
-        while True:
-            #print 'doing'
-            buf = sock.recv(1024)
-            if buf:
-                output.append(buf)
-            else:
-                break
-        incoming = ''.join(output)
-        #print incoming
-    
-        if incoming.startswith('HTTP/'):
-            #print incoming[:incoming.index('\r\n')]
-            status_line = incoming[:incoming.index('\r\n')].split()
-            server_protocol, status_code = status_line[0], status_line[1]
-            headers = incoming[incoming.index('\r\n') + 2:incoming.index('\r\n\r\n')]
-            content = incoming[incoming.index('\r\n\r\n') + 4:]
-    
-            response = HttpResponse(content, status=int(status_code))
-            for i in headers.split('\r\n'):
-                print i[:i.index(':')], i[i.index(':') + 2:]
-                response[i[:i.index(':')]] = i[i.index(':') + 2:]
-    
-            return response
-        else:
-            return HttpResponse2(incoming)
+        requ = urllib2.Request(querystring, None, outgoing_headers)
+        
+        remote = urllib2.urlopen(requ)
+        
+        status_code = remote.getcode()
+        headers = remote.headers # This is a dict
+        content = remote.read()
+        
+        # We should have all we need now.
+        # I cleaned up the part with the sockets - it's much cleaner now.
+
+        response = HttpResponse(content, status=int(status_code))
+        for header in headers.keys():
+            # We need to check if the header we forward is allowed (if it's not a hop by hop header)
+            if not basehttp.is_hop_by_hop(header):
+                response[header] = headers[header]
+
+        return response
+
 
 
 def header_name(name):
@@ -79,6 +65,7 @@ def header_name(name):
 
 
 class HttpResponse2(object):
+    """I'm not sure what this class is all about..."""
     status_code = 200
 
     def __init__(self, content=''):
